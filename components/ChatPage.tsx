@@ -85,6 +85,19 @@ const ChatPage: React.FC<ChatPageProps> = ({
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+    const handleAnimationComplete = (messageId: string) => {
+      const updatedMessages = activeThread?.messages.map(msg => {
+        if (msg.id === messageId) {
+          return { ...msg, hasAnimated: true };
+        }
+        return msg;
+      });
+      
+      if (activeThreadId && updatedMessages) {
+        onUpdateMessages(activeThreadId, updatedMessages);
+      }
+    };
+    
   const handleSend = async () => {
     if ((!inputText.trim() && attachments.length === 0) || !activeThreadId || isLoading) return;
 
@@ -114,6 +127,7 @@ const ChatPage: React.FC<ChatPageProps> = ({
         content: response || "I'm sorry, I couldn't process that.",
         timestamp: Date.now(),
         isThinking: useThinking
+        hasAnimated: false
       };
 
       onUpdateMessages(activeThreadId, [...updatedMessages, assistantMessage]);
@@ -221,11 +235,7 @@ const ChatPage: React.FC<ChatPageProps> = ({
                     {msg.role === 'user' ? (
                       <User size={24} className="text-indigo-400" />
                     ) : (
-                      <img 
-                        src="https://api.dicebear.com/7.x/bottts-neutral/svg?seed=Golem&backgroundColor=ffffff&eyes=happy&mouth=smile&baseColor=indigo" 
-                        alt="Golem Logo" 
-                        className="w-full h-full p-1"
-                      />
+                      <Bot size={28} className="text-indigo-600" />
                     )}
                   </div>
                   {isAssistant && (
@@ -252,11 +262,14 @@ const ChatPage: React.FC<ChatPageProps> = ({
                       ? 'bg-indigo-950/30 border-indigo-900/50 text-white rounded-tr-none'
                       : 'bg-slate-800/80 border-slate-700 text-slate-100 rounded-tl-none backdrop-blur-md'}`}>
                     
-                    {isAssistant && isLastMessage && !isLoading && !isSwitchingThread ? (
-                      <TypewriterText content={msg.content} />
-                    ) : (
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
-                    )}
+                    {isAssistant && isLastMessage && !isLoading && !isSwitchingThread && !msg.hasAnimated ? (
+  <TypewriterText 
+    content={msg.content} 
+    onComplete={() => handleAnimationComplete(msg.id)}
+  />
+) : (
+  <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+)}
 
                     {msg.isThinking && (
                       <div className="mt-5 flex items-center gap-2.5 text-[9px] font-black text-indigo-300 uppercase tracking-[0.4em] border-t border-slate-700 pt-4">
