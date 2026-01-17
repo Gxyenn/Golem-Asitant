@@ -1,3 +1,5 @@
+--- START OF FILE Golem-Asistant-main/App.tsx ---
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Page } from './types.js';
 import type { ChatThread, Message } from './types.js';
@@ -17,7 +19,8 @@ const App: React.FC = () => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       try {
-        setThreads(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        setThreads(parsed);
       } catch (e) { console.error(e); }
     }
     document.documentElement.classList.add('dark');
@@ -26,17 +29,6 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(threads));
   }, [threads]);
-
-  const handleStartChatting = () => {
-    setCurrentPage(Page.CHAT);
-    if (threads.length === 0) {
-      handleNewChat();
-    } else {
-      if (threads.length > 0 && threads[0]) {
-      setActiveThreadId(threads[0].id);
-    }
-    }
-  };
 
   const handleNewChat = useCallback(() => {
     const newThread: ChatThread = {
@@ -47,11 +39,27 @@ const App: React.FC = () => {
     };
     setThreads(prev => [newThread, ...prev]);
     setActiveThreadId(newThread.id);
+    return newThread.id;
   }, []);
 
+  const handleStartChatting = () => {
+    setCurrentPage(Page.CHAT);
+    if (threads.length === 0) {
+      handleNewChat();
+    } else if (!activeThreadId) {
+      // Jika ada thread tapi belum dipilih, pilih yang paling baru
+      setActiveThreadId(threads[0].id);
+    }
+  };
+
   const handleDeleteThread = useCallback((id: string) => {
-    setThreads(prev => prev.filter(t => t.id !== id));
-    if (activeThreadId === id) setActiveThreadId(null);
+    setThreads(prev => {
+        const newThreads = prev.filter(t => t.id !== id);
+        if (activeThreadId === id) {
+            setActiveThreadId(newThreads.length > 0 ? newThreads[0].id : null);
+        }
+        return newThreads;
+    });
   }, [activeThreadId]);
 
   const handleDeleteAll = useCallback(() => {
@@ -59,19 +67,22 @@ const App: React.FC = () => {
       setThreads([]);
       setActiveThreadId(null);
       localStorage.removeItem(STORAGE_KEY);
+      handleNewChat(); // Buat chat baru kosong
     }
-  }, []);
+  }, [handleNewChat]);
 
   const handleUpdateMessages = useCallback((threadId: string, messages: Message[]) => {
     setThreads(prev => prev.map(t => {
       if (t.id === threadId) {
-        const firstUserMsg = messages.find(m => m.role === 'user');
+        // Auto title jika ini pesan pertama user
         let newTitle = t.title;
-        if (firstUserMsg && firstUserMsg.content) {
-            newTitle = firstUserMsg.content.slice(0, 25);
-            if (firstUserMsg.content.length > 25) newTitle += '...';
+        if (t.messages.length === 0 && messages.length > 0) {
+            const firstUserMsg = messages.find(m => m.role === 'user');
+            if (firstUserMsg && firstUserMsg.content) {
+                newTitle = firstUserMsg.content.slice(0, 30);
+                if (firstUserMsg.content.length > 30) newTitle += '...';
+            }
         }
-
         return { ...t, messages, title: newTitle, updatedAt: Date.now() };
       }
       return t;
@@ -79,15 +90,16 @@ const App: React.FC = () => {
   }, []);
 
   const handleSelectThread = useCallback((id: string) => {
+    if (id === activeThreadId) return;
     setIsSwitchingThread(true);
     setActiveThreadId(id);
     setTimeout(() => {
       setIsSwitchingThread(false);
-    }, 500);
-  }, []);
+    }, 300);
+  }, [activeThreadId]);
 
   return (
-    <div className="min-h-screen transition-colors duration-300 bg-slate-900 text-white">
+    <div className="min-h-screen transition-colors duration-300 bg-slate-900 text-white font-sans">
       {currentPage === Page.LANDING ? (
         <LandingPage onStart={handleStartChatting} />
       ) : (

@@ -1,3 +1,4 @@
+--- START OF FILE Golem-Asistant-main/types.ts ---
 
 export interface Attachment {
   name: string;
