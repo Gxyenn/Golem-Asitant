@@ -1,10 +1,11 @@
-import { GenAI } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 import type { Message, Attachment } from "./types.js";
 
 const apiKey = import.meta.env.VITE_API_KEY;
 if (!apiKey) console.warn("API_KEY is missing in environment variables.");
 
-const client = new GenAI({ apiKey: apiKey || "" });
+// PERBAIKAN: Menggunakan GoogleGenAI, bukan GenAI
+const client = new GoogleGenAI({ apiKey: apiKey || "" });
 
 const SYSTEM_INSTRUCTION = `You are Golem, a professional, elegant, and futuristic AI assistant.
 Your personality is: polite, kind, cheerful, and friendly.
@@ -68,7 +69,6 @@ export const streamMessageToGolem = async (
       ],
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
-        // Model thinking experimental seringkali punya default temperature sendiri
         temperature: useThinking ? 0.7 : 0.7, 
       },
     });
