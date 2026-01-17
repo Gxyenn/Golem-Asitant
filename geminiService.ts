@@ -1,9 +1,6 @@
---- START OF FILE Golem-Asistant-main/geminiService.ts ---
-
 import { GenAI } from "@google/genai";
 import type { Message, Attachment } from "./types.js";
 
-// Inisialisasi Client
 const apiKey = import.meta.env.VITE_API_KEY;
 if (!apiKey) console.warn("API_KEY is missing in environment variables.");
 
@@ -21,19 +18,16 @@ export const streamMessageToGolem = async (
   history: Message[],
   useThinking: boolean = false,
   attachments?: { data: string; mimeType: string }[],
-  onChunk?:qp (text: string) => void
+  onChunk?: (text: string) => void
 ) => {
   try {
-    // Pilih model berdasarkan mode thinking
-    // gemini-2.0-flash adalah model standar yang sangat cepat
-    // gemini-2.0-flash-thinking-exp adalah model untuk penalaran mendalam
+    // Pilih model
     const modelId = useThinking ? 'gemini-2.0-flash-thinking-exp-01-21' : 'gemini-2.0-flash';
 
-    // Format history agar sesuai dengan spesifikasi SDK baru
-    // SDK baru mengharapkan array content, bukan sekedar role/parts manual yang rumit
+    // Format history sesuai SDK @google/genai
     const formattedHistory = history.map(msg => ({
       role: msg.role === 'user' ? 'user' : 'model',
-      partsTp: [
+      parts: [
         ...(msg.attachments?.map(att => ({
           inlineData: {
             data: att.data,
@@ -47,7 +41,7 @@ export const streamMessageToGolem = async (
     // Siapkan pesan baru
     const currentParts: any[] = [];
     
-    if (attachments &&ZS attachments.length > 0) {
+    if (attachments && attachments.length > 0) {
       attachments.forEach(att => {
         currentParts.push({
           inlineData: {
@@ -62,7 +56,7 @@ export const streamMessageToGolem = async (
       currentParts.push({ text: prompt });
     }
 
-    // Panggil API dengan mode Streaming
+    // Panggil API Streaming
     const response = await client.models.generateContentStream({
       model: modelId,
       contents: [
@@ -74,18 +68,18 @@ export const streamMessageToGolem = async (
       ],
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
-        temperature: useThinking ? 0.7 : 0.7, // Thinking model biasanya mengatur temp sendiri, tapi kita set default
+        // Model thinking experimental seringkali punya default temperature sendiri
+        temperature: useThinking ? 0.7 : 0.7, 
       },
     });
 
     let fullText = "";
     
-    // Loop chunk stream
     for await (const chunk of response.stream) {
       const chunkText = chunk.text();
       if (chunkText) {
         fullText += chunkText;
-        if (onChunk) onChunk(fullText); // Update UI secara real-time
+        if (onChunk) onChunk(fullText);
       }
     }
 

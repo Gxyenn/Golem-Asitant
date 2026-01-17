@@ -1,5 +1,3 @@
---- START OF FILE Golem-Asistant-main/App.tsx ---
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Page } from './types.js';
 import type { ChatThread, Message } from './types.js';
