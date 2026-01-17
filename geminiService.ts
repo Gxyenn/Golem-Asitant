@@ -1,4 +1,4 @@
-import { GoogleGenAI } from ""@google/generative-ai";
+import { GoogleGenerativeAI } from ""@google/generative-ai";
 import type { Message, Attachment } from "./types.js";
 
 const SYSTEM_INSTRUCTION = `You are Golem, a professional, elegant, and futuristic AI assistant.
