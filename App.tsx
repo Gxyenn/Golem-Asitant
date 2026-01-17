@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Page } from './types.js';
-import type { ChatThread, Message } from './types.js';
-import LandingPage from './components/LandingPage.js';
-import ChatPage from './components/ChatPage.js';
+import { Page } from './types';
+import type { ChatThread, Message } from './types';
+import LandingPage from './components/LandingPage';
+import ChatPage from './components/ChatPage';
 
 const STORAGE_KEY = 'golem_chat_history_v1';
 
