@@ -1,11 +1,6 @@
+
 import { GoogleGenAI } from "@google/genai";
 import type { Message, Attachment } from "./types.js";
-
-const apiKey = import.meta.env.VITE_API_KEY;
-if (!apiKey) console.warn("API_KEY is missing in environment variables.");
-
-// Inisialisasi Client
-const client = new GoogleGenAI({ apiKey: apiKey || "" });
 
 const SYSTEM_INSTRUCTION = `You are Golem, a professional, elegant, and futuristic AI assistant.
 Your personality is: polite, kind, cheerful, and friendly.
@@ -14,35 +9,34 @@ Always respond using Markdown for better readability. Use code blocks for snippe
 If the user uploads a file, analyze it thoroughly and provide insights.
 Be clear, helpful, and sophisticated.`;
 
-export const streamMessageToGolem = async (
-  prompt: string,
-  history: Message[],
+export const sendMessageToGolem = async (
+  prompt: string, 
+  history: Message[], 
   useThinking: boolean = false,
-  attachments?: { data: string; mimeType: string }[],
-  onChunk?: (text: string) => void
+  attachments?: { data: string; mimeType: string }[]
 ) => {
   try {
-    // Pilih model
-    const modelId = useThinking ? 'gemini-2.0-flash-thinking-exp-01-21' : 'gemini-2.0-flash';
-
-    // Format history
-    const formattedHistory = history.map(msg => ({
+    const apiKey = import.meta.env.VITE_API_KEY;
+    if (!apiKey) {
+      throw new Error("API_KEY is not set in environment variables.");
+    }
+    const ai = new GoogleGenAI({ apiKey });
+    
+    const contents = history.map(msg => ({
       role: msg.role === 'user' ? 'user' : 'model',
       parts: [
-        ...(msg.attachments?.map(att => ({
+        { text: msg.content },
+        ...(msg.attachments?.map((att: Attachment) => ({
           inlineData: {
             data: att.data,
             mimeType: att.mimeType
           }
-        })) || []),
-        { text: msg.content }
+        })) || [])
       ]
     }));
-
-    // Siapkan konten baru
-    const currentParts: any[] = [];
     
-    if (attachments && attachments.length > 0) {
+    const currentParts: any[] = [{ text: prompt }];
+    if (attachments) {
       attachments.forEach(att => {
         currentParts.push({
           inlineData: {
@@ -52,41 +46,23 @@ export const streamMessageToGolem = async (
         });
       });
     }
-    
-    if (prompt) {
-      currentParts.push({ text: prompt });
-    }
 
-    // Panggil API
-    const response = await client.models.generateContentStream({
-      model: modelId,
-      contents: [
-        ...formattedHistory,
-        {
-          role: 'user',
-          parts: currentParts
-        }
-      ],
+    contents.push({
+      role: 'user',
+      parts: currentParts
+    });
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-pro-preview',
+      contents: contents as any,
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
-        temperature: useThinking ? 0.7 : 0.7, 
+        temperature: 0.7,
+        ...(useThinking ? { thinkingConfig: { thinkingBudget: 32768 } } : {})
       },
     });
 
-    let fullText = "";
-    
-    // PERBAIKAN DI SINI:
-    // Hapus ".stream". Response itu sendiri adalah iterator.
-    for await (const chunk of response) {
-      const chunkText = chunk.text();
-      if (chunkText) {
-        fullText += chunkText;
-        if (onChunk) onChunk(fullText);
-      }
-    }
-
-    return fullText;
-
+    return response.text;
   } catch (error) {
     console.error("Gemini API Error:", error);
     throw error;
