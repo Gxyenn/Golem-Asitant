@@ -53,7 +53,7 @@ export const sendMessageToGolem = async (
     });
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-pro',
+      model: 'gemini-1.5-flas',
       contents: contents as any,
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
