@@ -12,6 +12,7 @@ export interface Message {
   timestamp: number;
   isThinking?: boolean;
   attachments?: Attachment[];
+  hasAnimated?: boolean;
 }
 
 export interface ChatThread {
