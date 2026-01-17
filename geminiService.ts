@@ -9,7 +9,7 @@ Always respond using Markdown for better readability.`;
 export const sendMessageToGolem = async (
   prompt: string, 
   history: Message[], 
-  useThinking: boolean = false, // Parameter ini kita abaikan dulu agar stabil
+  _useThinking: boolean = false, // Parameter ini kita abaikan dulu agar stabil
   attachments?: { data: string; mimeType: string }[]
 ) => {
   try {
