@@ -1,24 +1,20 @@
---- START OF FILE Golem-Asistant-main/components/ChatPage.tsx ---
-
 import React, { useState, useRef, useEffect, memo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { 
-  Sparkles, Plus,KZEq Trash2, Home, Send, 
-  User, Bot,TJ BrainCircuit, Menu, X, 
-  Paperclip, FileText, Image as ImageIcon,
-  SqStopCircle // Menambahkan icon stop
+  Sparkles, Plus, Trash2, Home, Send, 
+  User, Bot, BrainCircuit, Menu, X, 
+  Paperclip, FileText, Image as ImageIcon
 } from 'lucide-react';
 import type { ChatThread, Message, Attachment } from '../types.js';
 import { streamMessageToGolem } from '../geminiService.js';
 
-// Typewriter Component hanya untuk history lama/load page
+// Typewriter Component
 const TypewriterText = memo(({ content, speed = 2, onComplete }: { content: string, speed?: number, onComplete?: () => void }) => {
   const [displayedContent, setDisplayedContent] = useState('');
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
-    // Jika konten sangat panjang, langsung tampilkan sisanya agar tidak terlalu lama
     if (index < content.length) {
       const timeout = setTimeout(() => {
         setDisplayedContent((prev) => prev + content[index]);
@@ -60,7 +56,6 @@ const ChatPage: React.FC<ChatPageProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const activeThread = threads.find(t => t.id === activeThreadId);
 
-  // Auto scroll logic yang lebih baik
   const scrollToBottom = () => {
     if (messagesEndRef.current) {
         messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -92,19 +87,18 @@ const ChatPage: React.FC<ChatPageProps> = ({
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-    const handleAnimationComplete = (messageId: string) => {
-      // Tandai pesan sudah dianimasikan agar tidak render ulang typewriter saat pindah chat
-      const updatedMessages = activeThread?.messages.map(msg => {
-        if (msg.id === messageId) {
-          return { ...msg, hasAnimated: true };
-        }
-        return msg;
-      });
-      
-      if (activeThreadId && updatedMessages) {
-        onUpdateMessages(activeThreadId, updatedMessages);
+  const handleAnimationComplete = (messageId: string) => {
+    const updatedMessages = activeThread?.messages.map(msg => {
+      if (msg.id === messageId) {
+        return { ...msg, hasAnimated: true };
       }
-    };
+      return msg;
+    });
+    
+    if (activeThreadId && updatedMessages) {
+      onUpdateMessages(activeThreadId, updatedMessages);
+    }
+  };
     
   const handleSend = async () => {
     if ((!inputText.trim() && attachments.length === 0) || !activeThreadId || isLoading) return;
@@ -112,7 +106,6 @@ const ChatPage: React.FC<ChatPageProps> = ({
     const currentText = inputText;
     const currentAttachments = [...attachments];
     
-    // Reset input segera
     setInputText('');
     setAttachments([]);
     setIsLoading(true);
@@ -125,65 +118,58 @@ const ChatPage: React.FC<ChatPageProps> = ({
       attachments: currentAttachments
     };
 
-    // Placeholder untuk pesan assistant yang akan di-stream
     const assistantMessageId = (Date.now() + 1).toString();
     const assistantMessagePlaceholder: Message = {
       id: assistantMessageId,
       role: 'assistant',
-      content: '', // Mulai kosong
+      content: '',
       timestamp: Date.now(),
       isThinking: useThinking,
-      hasAnimated: true // Kita set true karena streaming langsung render text
+      hasAnimated: true 
     };
 
     const currentMessages = activeThread?.messages || [];
     const newMessages = [...currentMessages, userMessage, assistantMessagePlaceholder];
     
-    // Update state awal
     onUpdateMessages(activeThreadId, newMessages);
 
     try {
       const apiAttachments = userMessage.attachments?.map((a: Attachment) => ({ data: a.data, mimeType: a.mimeType }));
       
-      // Panggil service streaming
       await streamMessageToGolem(
         currentText, 
         currentMessages, 
         useThinking, 
         apiAttachments,
         (streamedText) => {
-            // Callback ini dipanggil setiap kali ada potongan text baru
             onUpdateMessages(activeThreadId, [
                 ...currentMessages, 
                 userMessage, 
                 { ...assistantMessagePlaceholder, content: streamedText }
             ]);
-            // Auto scroll saat streaming (opsional, kadang mengganggu jika user sedang baca ke atas)
-             messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+            // Optional: Auto scroll saat streaming
+            // messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
         }
       );
       
     } catch (error) {
       console.error(error);
-      // Ganti pesan terakhir dengan error message
       onUpdateMessages(activeThreadId, [
           ...currentMessages, 
           userMessage,
           {
             ...assistantMessagePlaceholder,
-            content: "**Error:** Failed to connect to Golem Neural Core. Please check your internet or API Key."
+            content: "**Error:** Failed to connect to Golem Neural Core. Please verify your connection or API key."
           }
       ]);
     } finally {
       setIsLoading(false);
-      // Simpan scroll terakhir
       setTimeout(scrollToBottom, 100);
     }
   };
 
   return (
     <div className="flex h-screen overflow-hidden transition-colors duration-300 relative bg-slate-900 text-slate-100">
-      {/* Sidebar (Sama seperti sebelumnya, tidak diubah logic-nya, hanya styling konsistensi) */}
       <aside className={`
         fixed inset-y-0 left-0 z-40 w-72 border-r flex flex-col transition-all duration-300 ease-in-out
         bg-slate-800 border-slate-700 shadow-2xl
@@ -234,7 +220,6 @@ const ChatPage: React.FC<ChatPageProps> = ({
          </div>
       </aside>
 
-      {/* Main Chat Area */}
       <main className="flex-1 flex flex-col relative overflow-hidden">
         <header className="px-6 py-4 border-b flex items-center justify-between sticky top-0 z-20 backdrop-blur-xl bg-slate-900/80 border-slate-700 shadow-lg">
           <div className="flex items-center gap-4">
@@ -259,7 +244,7 @@ const ChatPage: React.FC<ChatPageProps> = ({
         <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-8 transition-all bg-slate-900 scroll-smooth">
           {!activeThread || activeThread.messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center opacity-70">
-              <div className="w-24 h-24 bg-gradient-to-br from-indigo-500 to-slate-700 rounded-[2.5rem] flex items-center justify-center text-white shadow-2xlMb-8 rotate-6 animate-pulse mb-6">
+              <div className="w-24 h-24 bg-gradient-to-br from-indigo-500 to-slate-700 rounded-[2.5rem] flex items-center justify-center text-white shadow-2xl mb-6 rotate-6 animate-pulse">
                 <Sparkles size={48} />
               </div>
               <h3 className="text-3xl font-black mb-4 text-white">Golem Neural Core</h3>
@@ -292,7 +277,6 @@ const ChatPage: React.FC<ChatPageProps> = ({
                       ? 'bg-indigo-900/20 border-indigo-500/30 text-indigo-50 rounded-tr-sm'
                       : 'bg-slate-800 border-slate-700 text-slate-200 rounded-tl-sm'}`}>
                     
-                    {/* Logika render: Jika history lama dan belum animasi, pakai Typewriter. Jika sedang loading/streaming, pakai text biasa (karena streaming sudah efek ketik) */}
                     {isAssistant && !msg.hasAnimated && !isSwitchingThread && !isLoading ? (
                       <TypewriterText content={msg.content} onComplete={() => handleAnimationComplete(msg.id)} />
                     ) : (
@@ -315,11 +299,9 @@ const ChatPage: React.FC<ChatPageProps> = ({
             );
           })}
           
-          {/* Invisible div untuk scroll anchor */}
           <div ref={messagesEndRef} className="h-1" />
         </div>
 
-        {/* Input Area */}
         <div className="p-4 md:p-6 bg-slate-900">
           <div className="max-w-4xl mx-auto">
             {attachments.length > 0 && (
