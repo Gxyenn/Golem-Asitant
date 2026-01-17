@@ -1,6 +1,6 @@
 
 import { GoogleGenAI } from "@google/genai";
-import { Message } from "./types";
+import type { Message, Attachment } from "./types.js";
 
 const SYSTEM_INSTRUCTION = `You are Golem, a professional, elegant, and futuristic AI assistant.
 Your personality is: polite, kind, cheerful, and friendly.
@@ -16,13 +16,17 @@ export const sendMessageToGolem = async (
   attachments?: { data: string; mimeType: string }[]
 ) => {
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const apiKey = process.env.API_KEY;
+    if (!apiKey) {
+      throw new Error("API_KEY is not set in environment variables.");
+    }
+    const ai = new GoogleGenAI({ apiKey });
     
     const contents = history.map(msg => ({
       role: msg.role === 'user' ? 'user' : 'model',
       parts: [
         { text: msg.content },
-        ...(msg.attachments?.map(att => ({
+        ...(msg.attachments?.map((att: Attachment) => ({
           inlineData: {
             data: att.data,
             mimeType: att.mimeType

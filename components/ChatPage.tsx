@@ -8,8 +8,8 @@ import {
   Clock, MoreVertical, Paperclip, 
   FileText, Image as ImageIcon
 } from 'lucide-react';
-import { ChatThread, Message, Attachment } from '../types';
-import { sendMessageToGolem } from '../geminiService';
+import type { ChatThread, Message, Attachment } from '../types.js';
+import { sendMessageToGolem } from '../geminiService.js';
 
 // Typewriter Component for Live Typing Feel
 const TypewriterText = memo(({ content, speed = 2, onComplete }: { content: string, speed?: number, onComplete?: () => void }) => {
@@ -72,12 +72,14 @@ const ChatPage: React.FC<ChatPageProps> = ({
     Array.from(files).forEach((file: File) => {
       const reader = new FileReader();
       reader.onload = (event) => {
-        const base64 = (event.target?.result as string).split(',')[1];
-        setAttachments(prev => [...prev, {
-          name: file.name,
-          mimeType: file.type,
-          data: base64
-        }]);
+        const base64 = (event.target?.result as string)?.split(',')[1];
+        if (base64) {
+          setAttachments(prev => [...prev, {
+            name: file.name,
+            mimeType: file.type,
+            data: base64
+          }]);
+        }
       };
       reader.readAsDataURL(file);
     });
@@ -92,7 +94,7 @@ const ChatPage: React.FC<ChatPageProps> = ({
       role: 'user',
       content: inputText,
       timestamp: Date.now(),
-      attachments: attachments.length > 0 ? [...attachments] : undefined
+      attachments: attachments.length > 0 ? [...attachments] : []
     };
 
     const currentMessages = activeThread?.messages || [];
@@ -104,7 +106,7 @@ const ChatPage: React.FC<ChatPageProps> = ({
     setIsLoading(true);
 
     try {
-      const apiAttachments = userMessage.attachments?.map(a => ({ data: a.data, mimeType: a.mimeType }));
+      const apiAttachments = userMessage.attachments?.map((a: Attachment) => ({ data: a.data, mimeType: a.mimeType }));
       const response = await sendMessageToGolem(inputText, currentMessages, useThinking, apiAttachments);
       
       const assistantMessage: Message = {
@@ -209,7 +211,7 @@ const ChatPage: React.FC<ChatPageProps> = ({
               <h3 className="text-3xl font-black mb-4">Golem AI Neural Core</h3>
               <p className="max-w-md text-slate-400 font-medium">Greetings. I am Golem, your elite neural assistant. How may I assist your inquiries today?</p>
             </div>
-          ) : activeThread.messages.map((msg, index) => {
+          ) : activeThread.messages.map((msg: Message, index: number) => {
             const isLastMessage = index === activeThread.messages.length - 1;
             const isAssistant = msg.role === 'assistant';
 
@@ -238,7 +240,7 @@ const ChatPage: React.FC<ChatPageProps> = ({
                 <div className={`flex flex-col max-w-[90%] md:max-w-[80%] ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                   {msg.attachments && msg.attachments.length > 0 && (
                     <div className="flex flex-wrap gap-2 mb-3">
-                      {msg.attachments.map((att, i) => (
+                      {msg.attachments.map((att: Attachment, i: number) => (
                         <div key={i} className="flex items-center gap-2 px-3.5 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs font-bold shadow-sm">
                           {att.mimeType.startsWith('image/') ? <ImageIcon size={14} /> : <FileText size={14} />}
                           <span className="max-w-[120px] truncate">{att.name}</span>
