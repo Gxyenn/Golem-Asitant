@@ -5,8 +5,7 @@ import remarkGfm from 'remark-gfm';
 import { 
   Sparkles, Plus, Trash2, Home, Send, 
   User, Bot, BrainCircuit, Menu, X, 
-  Clock, MoreVertical, Paperclip, 
-  FileText, Image as ImageIcon
+  Paperclip, FileText, Image as ImageIcon
 } from 'lucide-react';
 import type { ChatThread, Message, Attachment } from '../types.js';
 import { sendMessageToGolem } from '../geminiService.js';
