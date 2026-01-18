@@ -16,7 +16,7 @@ export const sendMessageToGolem = async (
   attachments?: { data: string; mimeType: string }[]
 ) => {
   try {
-    const apiKey = import.meta.env.VITE_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       throw new Error("API_KEY is not set in environment variables.");
     }
