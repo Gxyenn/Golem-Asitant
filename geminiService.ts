@@ -1,4 +1,3 @@
-
 import { GoogleGenAI } from "@google/genai";
 import type { Message, Attachment } from "./types.js";
 
@@ -16,12 +15,13 @@ export const sendMessageToGolem = async (
   attachments?: { data: string; mimeType: string }[]
 ) => {
   try {
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = import.meta.env.VITE_API_KEY;
     if (!apiKey) {
       throw new Error("API_KEY is not set in environment variables.");
     }
     const ai = new GoogleGenAI({ apiKey });
     
+    // Format history agar sesuai dengan struktur SDK
     const contents = history.map(msg => ({
       role: msg.role === 'user' ? 'user' : 'model',
       parts: [
@@ -35,6 +35,7 @@ export const sendMessageToGolem = async (
       ]
     }));
     
+    // Persiapkan pesan user saat ini
     const currentParts: any[] = [{ text: prompt }];
     if (attachments) {
       attachments.forEach(att => {
@@ -52,19 +53,28 @@ export const sendMessageToGolem = async (
       parts: currentParts
     });
 
+    // PILIH MODEL YANG VALID DI SINI
+    // Gunakan 'gemini-2.0-flash-exp' atau 'gemini-1.5-flash'
+    // 'gemini-3-pro-preview' BELUM ADA.
+    const modelName = useThinking ? 'gemini-2.0-flash-thinking-exp-1219' : 'gemini-2.0-flash-exp';
+
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
+      model: modelName, 
       contents: contents as any,
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
         temperature: 0.7,
-        ...(useThinking ? { thinkingConfig: { thinkingBudget: 32768 } } : {})
+        // Thinking config hanya dikirim jika useThinking true DAN model mendukungnya
+        ...(useThinking ? { thinkingConfig: { thinkingBudget: 1024 } } : {}) 
       },
     });
 
-    return response.text;
+    // SDK baru mungkin mengembalikan response.text sebagai fungsi atau properti langsung
+    // Pastikan kita mengambil teks dengan benar
+    return response.text ? response.text() : "No response text generated.";
+    
   } catch (error) {
-    console.error("Gemini API Error:", error);
+    console.error("Gemini API Error Detail:", error); // Cek console browser (F12) untuk detail
     throw error;
   }
 };
